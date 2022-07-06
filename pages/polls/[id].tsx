@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useMemo } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -56,19 +57,8 @@ const Poll: NextPage = () => {
         },
       });
 
-      const { data: pollData }: GETPollResponse = await res.json();
-
-      const optionIds = pollData.options.map((opt) => opt.id);
-
-      return {
-        labels: pollData.options.map((opt) => opt.label),
-        datasets: [
-          {
-            label: "Votes",
-            data: optionIds.map((id) => pollData.aggregatedVoteTotals[id]),
-          },
-        ],
-      };
+      const data: GETPollResponse = await res.json();
+      return data.data;
     },
     {
       enabled: id !== undefined,
@@ -76,18 +66,28 @@ const Poll: NextPage = () => {
     }
   );
 
-  // useEffect(() => {
-  //   var myChart = new Chart(table, config);
+  const graphData = useMemo(() => {
+    if (!data) {
+      return null;
+    }
 
-  //   return () => {
-  //     myChart.destroy();
-  //   };
-  // }, []);
+    const optionIds = data.options.map((opt) => opt.id);
+
+    return {
+      labels: data.options.map((opt) => opt.label),
+      datasets: [
+        {
+          label: "Votes",
+          data: optionIds.map((id) => data.aggregatedVoteTotals[id]),
+        },
+      ],
+    };
+  }, [data]);
 
   return (
     <Center py="12">
       <Stack width="500px">
-        <Heading>Poll {id}</Heading>
+        <Heading>Poll</Heading>
 
         <Box
           p={6}
@@ -102,7 +102,12 @@ const Poll: NextPage = () => {
           ) : isError ? (
             <Text>{error as any}</Text>
           ) : (
-            <Bar data={data} />
+            <Stack>
+              <Heading as="h2" fontSize="lg">
+                {data.question}
+              </Heading>
+              <Bar data={graphData as any} />
+            </Stack>
           )}
         </Box>
       </Stack>
